@@ -1,0 +1,34 @@
+{
+    "name": "nirmalsharma/laravel-kafka-consumer",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "NirmalSharma\\LaravelKafkaConsumer\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Nirmal Sharma",
+            "email": "nirmalsharmamca@gmail.com"
+        },
+        {
+            "name": "Praveen Menezes",
+            "email": "praveen23011993@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.2",
+        "laravel/framework": "^6.0.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "NirmalSharma\\LaravelKafkaConsumer\\KafkaServiceProvider"
+            ],
+            "aliases": {
+                "Kafka": "NirmalSharma\\LaravelKafkaConsumer\\Services\\Kafka"
+            }
+        }
+    },
+    "license": "MIT"
+}
