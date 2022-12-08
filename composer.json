@@ -22,7 +22,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "NirmalSharma\\LaravelKafkaConsumer\\KafkaServiceProvider"
+                "NirmalSharma\\LaravelKafkaConsumer\\KafkaConsumerServiceProvider"
             ],
             "aliases": {
                 "Kafka": "NirmalSharma\\LaravelKafkaConsumer\\Services\\Kafka"
