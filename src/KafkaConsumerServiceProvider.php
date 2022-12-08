@@ -31,7 +31,7 @@ class KafkaConsumerServiceProvider extends ServiceProvider {
         // Set where to start consuming messages when there is no initial offset in
         // offset store or the desired offset is out of range.
         // 'smallest': start from the beginning
-        $conf->set('auto.offset.reset', config("kafka.offser_reset"));
+        $conf->set('auto.offset.reset', 'earliest');
 
         // Automatically and periodically commit offsets in the background
         $conf->set('enable.auto.commit', config("kafka.auto_commit"));

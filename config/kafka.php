@@ -72,7 +72,7 @@ return [
     |
     */
 
-    'offser_reset' => env('KAFKA_OFFSET_RESET', 'latest'),
+    'offset_reset' => env('KAFKA_OFFSET_RESET', 'latest'),
 
     /*
     |--------------------------------------------------------------------------
