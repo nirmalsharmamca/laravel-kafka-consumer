@@ -3,6 +3,7 @@ namespace NirmalSharma\LaravelKafkaConsumer;
 
 use Illuminate\Support\ServiceProvider;
 use RdKafka\Conf;
+use RdKafka\Consumer;
 
 class KafkaConsumerServiceProvider extends ServiceProvider {
     private $config;
@@ -23,7 +24,7 @@ class KafkaConsumerServiceProvider extends ServiceProvider {
 
         // Configure the group.id. All consumer with the same group.id will consume
         // different partitions.
-        $conf->set('group.id', config("kafka.consumer_group_id"));
+        $conf->set('group.id', 'group');
 
         // Initial list of Kafka brokers
         $conf->set('metadata.broker.list', config("kafka.brokers"));
@@ -47,8 +48,8 @@ class KafkaConsumerServiceProvider extends ServiceProvider {
     public function boot() {
 
         $kafka_consumer_conf = $this->setConsumerConfig();
-        $this->app->bind(KafkaConsumer::class, function () use ($kafka_consumer_conf) {
-            return new KafkaConsumer($kafka_consumer_conf);
+        $this->app->bind(Consumer::class, function () use ($kafka_consumer_conf) {
+            return new Consumer($kafka_consumer_conf);
         });
     }
 }
