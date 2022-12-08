@@ -13,24 +13,57 @@ Install Kafka Consumer Warpper
 
 ## Use Kafka in code.
 
-Add following in web.php
+Sample code for console
 
 ```bash
-use Kafka;
+namespace App\Console\Commands;
 
-$topic = "kafka-topic";
-$data = [
-    "user_ref" => "usr.123456",
-    "message" => "Hello World"
-];
-$key = "usr.123456"; // Optional, Default null
-$headers = [
-    "ContentType" => "application/json",
-    "Timezone" => "GMT +05:30"
-]; // Optional
-Kafka::push($topic, $data, $key, $headers);
+use App\Handlers\TestHandler;
+use Illuminate\Console\Command;
+use NirmalSharma\LaravelKafkaConsumer\Services\Kafka;
+
+class TestTopicConsumer extends Command
+{
+    protected $signature = 'kafka:test-consume';
+
+    protected $description = 'Command description';
+
+    public function handle(): void
+    {
+      Kafka::createConsumer('ring-test-topic', 0, new TestHandler);
+    }
+}
+
+TestHandler.php
+-----------------
+
+namespace App\Handlers;
+
+use Illuminate\Support\Facades\Log;
+
+class TestHandler
+{
+    public function __invoke( $message)
+    {
+        Log::debug('Message received!', [
+            $message
+        ]);
+    }
+}
 
 ```
+
+## To start listening messages by run following command: 
+
+```
+  php artisan kafka:test-consume
+```
+
+## You can check handler log message in "storage/logs/laravel.log" file or run the following command in your terminal:
+```
+  tail -f storage/logs/laravel.log
+```
+
 ## Environment Variables
 
 To run this, you will need to add the following environment variables to your .env file
@@ -40,7 +73,7 @@ Config reference: https://github.com/edenhill/librdkafka/blob/master/CONFIGURATI
 IS_KAFKA_ENABLED=             // Default:  1
 KAFKA_BROKERS=
 KAFKA_DEBUG=                  // Default: false
-KAFKA_SSL_PROTOCOL=           // Default: plaintext
+KAFKA_SSL_PROTOCOL=           // Default: plaintext or ssl for consumer
 KAFKA_COMPRESSION_TYPE=       // Default: none
 KAFKA_IDEMPOTENCE=            // Default: false
 KAFKA_CONSUMER_GROUP_ID=      // Default: group
