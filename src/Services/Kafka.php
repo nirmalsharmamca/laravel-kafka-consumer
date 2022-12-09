@@ -18,7 +18,7 @@ abstract class Kafka {
      * @return $consumer
      */
     public static function createConsumer(string $topic, int $partition = 0, $handler) {            
-        $obj = app(KafkaConsumerHandler::class);
-        return $obj->createConsumer($topic, $partition, $handler);
+        $consumer = app(KafkaConsumerHandler::class);
+        return $consumer->createConsumer($topic, $partition, $handler);
     }
 }

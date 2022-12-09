@@ -25,7 +25,7 @@
                 "NirmalSharma\\LaravelKafkaConsumer\\KafkaConsumerServiceProvider"
             ],
             "aliases": {
-                "Kafka": "NirmalSharma\\LaravelKafkaConsumer\\Services\\Kafka"
+                "KafkaConsumer": "NirmalSharma\\LaravelKafkaConsumer\\Services\\Kafka"
             }
         }
     },

@@ -18,8 +18,12 @@ class KafkaConsumerServiceProvider extends ServiceProvider {
         $this->mergeConfigFrom($source, 'kafka');
     }
 
-    protected function setConsumerConfig()
-    {
+    /**
+     * Setup configs for Kafka Consumer
+     *
+     * @return \RdKafka\Conf
+     */
+    protected function setConsumerConfig(): Conf{
         $conf = new Conf();
 
         // Configure the group.id. All consumer with the same group.id will consume
@@ -28,6 +32,9 @@ class KafkaConsumerServiceProvider extends ServiceProvider {
 
         // Initial list of Kafka brokers
         $conf->set('metadata.broker.list', config("kafka.brokers"));
+
+        // SSL Protocol
+        $conf->set('security.protocol', config("kafka.ssl_protocol"));
 
         // Set where to start consuming messages when there is no initial offset in
         // offset store or the desired offset is out of range.
@@ -46,6 +53,7 @@ class KafkaConsumerServiceProvider extends ServiceProvider {
      * @return void
      */
     public function boot() {
+        $this->setupConfig();
 
         $kafka_consumer_conf = $this->setConsumerConfig();
         $this->app->bind(Consumer::class, function () use ($kafka_consumer_conf) {

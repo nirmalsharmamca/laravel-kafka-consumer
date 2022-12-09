@@ -8,10 +8,10 @@
 namespace NirmalSharma\LaravelKafkaConsumer\Handlers;
 
 use Exception;
-use RdKafka\Conf;
-use RdKafka\TopicConf;
 use RdKafka\Consumer;
 use RdKafka\Message;
+use RdKafka\TopicConf;
+use Log;
 
 class KafkaConsumerHandler {
     /**
@@ -59,14 +59,14 @@ class KafkaConsumerHandler {
      */
     private $key;
 
-    // /**
-    //  * KafkaConsumer's constructor
-    //  *
-    //  * @param \RdKafka\KafkaConsumer $producer
-    //  */
-    // public function __construct( Consumer $consumer) {
-    //     $this->consumer = $consumer;
-    // }
+    /**
+     * KafkaConsumer's constructor
+     *
+     * @param \RdKafka\KafkaConsumer $producer
+     */
+    public function __construct(Consumer $consumer) {
+        $this->consumer = $consumer;
+    }
 
     /**
      * Set kafka topic
@@ -113,15 +113,13 @@ class KafkaConsumerHandler {
         $this->key = $key;
     }
 
-
     /**
      * Decode kafka message
      *
-     * @param \RdKafka\Message $kafkaMessage
+     * @param  \RdKafka\Message $kafkaMessage
      * @return object
      */
-    public function decodeKafkaMessage(Message $kafkaMessage)
-    {
+    public function decodeKafkaMessage(Message $kafkaMessage) {
         $message = json_decode($kafkaMessage->payload, true);
 
         if (isset($message->body) && is_string($message->body)) {
@@ -131,32 +129,7 @@ class KafkaConsumerHandler {
         return $message;
     }
 
-    public function setConsumerConfig()
-    {
-        $conf = new Conf();
-
-        // Configure the group.id. All consumer with the same group.id will consume
-        // different partitions.
-        $conf->set('group.id', config("kafka.consumer_group_id"));
-
-        // Initial list of Kafka brokers
-        $conf->set('metadata.broker.list', config("kafka.brokers"));
-
-        $conf->set('security.protocol', config("kafka.ssl_protocol"));
-
-        // Set where to start consuming messages when there is no initial offset in
-        // offset store or the desired offset is out of range.
-        // 'smallest': start from the beginning
-        $conf->set('auto.offset.reset', config("kafka.offset_reset"));
-
-        // Automatically and periodically commit offsets in the background
-        $conf->set('enable.auto.commit', config("kafka.auto_commit"));
-
-        return $conf;
-    }
-
-    public function setTopicConfig()
-    {
+    public function setTopicConfig() {
         $topicConf = new TopicConf();
         $topicConf->set('auto.commit.interval.ms', 100);
 
@@ -167,13 +140,17 @@ class KafkaConsumerHandler {
         return $topicConf;
     }
 
-    public function createConsumer($topic, int $partition = 0, $handler){
-        $consumerConfig = $this->setConsumerConfig();
-        $rk = new Consumer($consumerConfig);
-        
-        $topic = $rk->newTopic($topic, $this->setTopicConfig());
+    /**
+     * Kafka Consumer
+     * @param  string      $topic     Indicates Kafka Topic
+     * @param  int|integer $partition Indicates Topic partition
+     * @param  [type]      $handler   [description]
+     * @return [type]                 [description]
+     */
+    public function createConsumer(string $topic, int $partition = 0, $handler) {
+        $topic = $this->consumer->newTopic($topic, $this->setTopicConfig());
         $topic->consumeStart($partition, RD_KAFKA_OFFSET_STORED);
-        
+
         while (true) {
             
             $message = $topic->consume($partition, 120*10000);
@@ -184,8 +161,8 @@ class KafkaConsumerHandler {
                 throw new Exception($message->errstr());
                 break;
             } else {
-                $handler( $this->decodeKafkaMessage($message) );
-            }  
+                $handler($this->decodeKafkaMessage($message));
+            }
         }
     }
 
