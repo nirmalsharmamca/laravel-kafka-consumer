@@ -20,17 +20,41 @@ namespace App\Console\Commands;
 
 use App\Handlers\TestHandler;
 use Illuminate\Console\Command;
-use NirmalSharma\LaravelKafkaConsumer\Services\Kafka;
+use KafkaConsumer;
 
 class TestTopicConsumer extends Command
 {
-    protected $signature = 'kafka:test-consume';
+    protected $signature = 'kafka-consume {--partition=} {--consumer-group=} {--topic=}';
 
-    protected $description = 'Command description';
+    protected $description = 'Kafka consumer!!';
 
     public function handle(): void
     {
-      Kafka::createConsumer('ring-test-topic', 0, new TestHandler);
+      KafkaConsumer::createConsumer(new TestHandler);
+    }
+
+    public function setKafkaConfig(){
+        $partition = $this->option('partition');
+        if( $partition != null){
+            config([
+                "kafka.partition" => $partition
+            ]);
+        }
+
+        $consumer_group_id = $this->option('consumer-group');
+        if( !empty($consumer_group_id)){
+            config([
+                "kafka.consumer_group_id" => $consumer_group_id
+            ]);
+        }
+
+        $topic = $this->option('topic');
+        if( !empty($topic)){
+            config([
+                "kafka.topic" => $topic
+            ]);
+        }
+        
     }
 }
 
@@ -43,12 +67,13 @@ use Illuminate\Support\Facades\Log;
 
 class TestHandler
 {
-    public function __invoke( $message)
-    {
-        Log::debug('Message received!', [
-            $message
-        ]);
-    }
+  public function __invoke( $message)
+  {   
+    print_r([$message]);
+    Log::debug('Message received!', [
+        $message
+    ]);
+  }
 }
 
 ```
@@ -56,7 +81,7 @@ class TestHandler
 ## To start listening messages by run following command: 
 
 ```
-  php artisan kafka:test-consume
+  php artisan kafka-consume {--partition=} {--consumer-group=} {--topic=}
 ```
 
 ## You can check handler log message in "storage/logs/laravel.log" file or run the following command in your terminal:
@@ -81,6 +106,7 @@ KAFKA_OFFSET_RESET=           // Default: latest
 KAFKA_AUTO_COMMIT=            // Default: true
 KAFKA_ERROR_SLEEP=            // Default: 5
 KAFKA_PARTITION=              // Default: 0
+KAFKA_TOPIC=                  // 
 ```
 
 
