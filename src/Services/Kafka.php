@@ -8,17 +8,15 @@
 namespace NirmalSharma\LaravelKafkaConsumer\Services;
 
 use NirmalSharma\LaravelKafkaConsumer\Handlers\KafkaConsumerHandler;
-
 abstract class Kafka {
 
     /**
      * Create Consumer function
      *
-     * @param string $topic
      * @return $consumer
      */
-    public static function createConsumer(string $topic, int $partition = 0, $handler) {            
+    public static function createConsumer($handler) {            
         $consumer = app(KafkaConsumerHandler::class);
-        return $consumer->createConsumer($topic, $partition, $handler);
+        return $consumer->createConsumer($handler);
     }
 }

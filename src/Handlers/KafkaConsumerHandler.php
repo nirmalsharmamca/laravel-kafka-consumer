@@ -8,7 +8,7 @@
 namespace NirmalSharma\LaravelKafkaConsumer\Handlers;
 
 use Exception;
-use RdKafka\Consumer;
+use RdKafka\KafkaConsumer;
 use RdKafka\Message;
 use RdKafka\TopicConf;
 use Log;
@@ -64,7 +64,7 @@ class KafkaConsumerHandler {
      *
      * @param \RdKafka\KafkaConsumer $producer
      */
-    public function __construct(Consumer $consumer) {
+    public function __construct(KafkaConsumer $consumer) {
         $this->consumer = $consumer;
     }
 
@@ -129,41 +129,68 @@ class KafkaConsumerHandler {
         return $message;
     }
 
-    public function setTopicConfig() {
+    /**
+     * Set topic conf
+     *
+     * @return TopicConf
+     */
+    public function setTopicConfig() : TopicConf{
         $topicConf = new TopicConf();
         $topicConf->set('auto.commit.interval.ms', 100);
 
         // Set the offset store method to 'file'
         $topicConf->set('offset.store.method', 'broker');
 
-        $topicConf->set('auto.offset.reset', 'earliest');
+        $topicConf->set('auto.offset.reset', config("kafka.offset_reset"));
         return $topicConf;
     }
 
     /**
      * Kafka Consumer
-     * @param  string      $topic     Indicates Kafka Topic
-     * @param  int|integer $partition Indicates Topic partition
-     * @param  [type]      $handler   [description]
-     * @return [type]                 [description]
+     * @param  [mixed]      $handler  Instance of class handler
+     * @return void                 
      */
-    public function createConsumer(string $topic, int $partition = 0, $handler) {
-        $topic = $this->consumer->newTopic($topic, $this->setTopicConfig());
-        $topic->consumeStart($partition, RD_KAFKA_OFFSET_STORED);
+    public function createConsumer($handler) {
+        
+        $this->consumer->subscribe([config('kafka.topic')]);
 
         while (true) {
-            
-            $message = $topic->consume($partition, 120*10000);
-
-            if (null === $message || $message->err === RD_KAFKA_RESP_ERR__PARTITION_EOF) {
-                continue;
-            } elseif ($message->err) {
-                throw new Exception($message->errstr());
-                break;
-            } else {
-                $handler($this->decodeKafkaMessage($message));
+            $message = $this->consumer->consume(120*1000);
+            switch ($message->err) {
+                case RD_KAFKA_RESP_ERR_NO_ERROR:
+                    $handler($this->decodeKafkaMessage($message));
+                    break;
+                case RD_KAFKA_RESP_ERR__PARTITION_EOF:
+                    Log::debug("Error", ["No more messages; will wait for more"]);
+                    break;
+                case RD_KAFKA_RESP_ERR__TIMED_OUT:
+                    Log::debug("Error", ["Timed out"]);
+                    break;
+                default:
+                    throw new \Exception($message->errstr(), $message->err);
+                    break;
             }
         }
+
+
+
+        // $topic = $this->consumer->newTopic(config('kafka.topic'), $this->setTopicConfig());
+        // $partition = config('kafka.partition');
+        // $topic->consumeStart($partition, RD_KAFKA_OFFSET_STORED);
+
+        // while (true) {
+            
+        //     $message = $topic->consume($partition, 120*10000);
+
+        //     if (null === $message || $message->err === RD_KAFKA_RESP_ERR__PARTITION_EOF) {
+        //         continue;
+        //     } elseif ($message->err) {
+        //         throw new Exception($message->errstr());
+        //         break;
+        //     } else {
+        //         $handler($this->decodeKafkaMessage($message));
+        //     }
+        // }
     }
 
 }
