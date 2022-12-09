@@ -41,6 +41,9 @@ class KafkaConsumerServiceProvider extends ServiceProvider {
         // 'smallest': start from the beginning
         $conf->set('auto.offset.reset', config("kafka.offset_reset"));
 
+        // Emit EOF event when reaching the end of a partition
+        $conf->set('enable.partition.eof', 'true');
+
         // Automatically and periodically commit offsets in the background
         $conf->set('enable.auto.commit', config("kafka.auto_commit"));
 

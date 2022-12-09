@@ -11,6 +11,7 @@ use Exception;
 use RdKafka\KafkaConsumer;
 use RdKafka\Message;
 use RdKafka\TopicConf;
+use RdKafka\TopicPartition;
 use Log;
 
 class KafkaConsumerHandler {
@@ -151,9 +152,20 @@ class KafkaConsumerHandler {
      * @return void                 
      */
     public function createConsumer($handler) {
-        
-        $this->consumer->subscribe([config('kafka.topic')]);
+        $partition = config('kafka.partition');
 
+        if( $partition != null ){
+            $this->consumer->assign([
+                new TopicPartition(config('kafka.topic'), $partition)
+            ]);
+        }
+        else {
+            $this->consumer->subscribe([config('kafka.topic')]);
+        }
+
+        // it will return current assign partition.
+        // print_r($this->consumer->getAssignment());
+        
         while (true) {
             $message = $this->consumer->consume(120*1000);
             switch ($message->err) {
