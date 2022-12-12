@@ -3,7 +3,6 @@ namespace NirmalSharma\LaravelKafkaConsumer;
 
 use Illuminate\Support\ServiceProvider;
 use RdKafka\Conf;
-use RdKafka\KafkaConsumer;
 
 class KafkaConsumerServiceProvider extends ServiceProvider {
     private $config;
