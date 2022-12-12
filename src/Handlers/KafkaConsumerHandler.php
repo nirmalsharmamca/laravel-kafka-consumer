@@ -81,13 +81,22 @@ class KafkaConsumerHandler {
      * @return object
      */
     public function decodeKafkaMessage(Message $kafka_message) {
+        $return_data = [
+            "hearders"  => null,
+            "data"      => [],
+            "key"       => null,
+            "raw"       => $kafka_message
+        ];
         $message = json_decode($kafka_message->payload, true);
 
         if (isset($message->body) && is_string($message->body)) {
             $message->body = json_decode($message->body, true);
         }
+        $return_data['data']        = $message;
+        $return_data['hearders']    = @$kafka_message->headers;
+        $return_data['key']         = @$kafka_message->key;
 
-        return $message;
+        return $return_data;
     }
 
     /**
