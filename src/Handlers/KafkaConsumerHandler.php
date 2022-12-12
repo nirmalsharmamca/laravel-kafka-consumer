@@ -8,11 +8,11 @@
 namespace NirmalSharma\LaravelKafkaConsumer\Handlers;
 
 use Exception;
+use Log;
+use RdKafka\Conf;
 use RdKafka\KafkaConsumer;
 use RdKafka\Message;
-use RdKafka\TopicConf;
 use RdKafka\TopicPartition;
-use Log;
 
 class KafkaConsumerHandler {
     /**
@@ -21,107 +21,67 @@ class KafkaConsumerHandler {
     const TOPIC_MISSING_ERROR_MESSAGE = 'Topic is not set';
 
     /**
-     * Flush error message
+     * Kafka Consumer Configuration
+     *
+     * @var \RdKafka\Conf
      */
-    const FLUSH_ERROR_MESSAGE = 'librdkafka unable to perform flush, messages might be lost';
+    protected $conf;
 
     /**
-     * Message payload
+     * Kafka Consumer Instance
      *
-     * @var string
-     */
-    protected $payload;
-
-    /**
-     * Kafka topic
-     *
-     * @var string
-     */
-    protected $topic;
-
-    /**
-     * RdKafka producer
-     *
-     * @var \RdKafka\Producer
+     * @var \RdKafka\KafkaConsumer
      */
     protected $consumer;
 
-    /**
-     * Kafka message
-     *
-     * @var array
-     */
-    private $message;
-
-    /**
-     * Kafka key
-     *
-     * @var string
-     */
-    private $key;
-
-    /**
-     * KafkaConsumer's constructor
-     *
-     * @param \RdKafka\KafkaConsumer $producer
-     */
-    public function __construct(KafkaConsumer $consumer) {
-        $this->consumer = $consumer;
+    public function __construct(Conf $conf) {
+        $this->setConsumerConfig($conf);
     }
 
     /**
-     * Set kafka topic
+     * Setup configs for Kafka Consumer
      *
-     * @param  string  $topic
-     * @return $this
+     * @return \RdKafka\Conf
      */
-    public function setTopic(string $topic) {
-        $this->topic = $topic;
+    protected function setConsumerConfig(Conf $conf) {
 
-        return $this;
-    }
+        // Configure the group.id. All consumer with the same group.id will consume
+        // different partitions.
+        $conf->set('group.id', config("kafka.consumer_group_id"));
 
-    /**
-     * Get topic
-     *
-     * @return string
-     */
-    public function getTopic() {
-        if (!$this->topic) {
-            throw new Exception(self::TOPIC_MISSING_ERROR_MESSAGE);
-        }
+        // Initial list of Kafka brokers
+        $conf->set('metadata.broker.list', config("kafka.brokers"));
 
-        return $this->topic;
-    }
+        // SSL Protocol
+        $conf->set('security.protocol', config("kafka.ssl_protocol"));
 
-    /**
-     * Set Message Payload
-     *
-     * @param  array  $data Message Data
-     * @return void
-     */
-    public function setMessage(array $data) {
-        $this->message = json_encode($data);
-    }
+        // Set where to start consuming messages when there is no initial offset in
+        // offset store or the desired offset is out of range.
+        // 'smallest': start from the beginning
+        $conf->set('auto.offset.reset', config("kafka.offset_reset"));
 
-    /**
-     * Set Kafka Key
-     *
-     * @param  string $key Key
-     * @return void
-     */
-    public function setKey(string $key) {
-        $this->key = $key;
+        // Emit EOF event when reaching the end of a partition
+        $conf->set('enable.partition.eof', 'true');
+
+        // Automatically and periodically commit offsets in the background
+        $conf->set('enable.auto.commit', config("kafka.auto_commit"));
+
+        $this->conf = $conf;
     }
 
     /**
      * Decode kafka message
      *
-     * @param  \RdKafka\Message $kafkaMessage
+     * {
+     *     "headers"    => "message-headers",
+     *     "key"        => "message-key",
+     *     "body"       => "message-body"
+     * }
+     * @param  \RdKafka\Message $kafka_message
      * @return object
      */
-    public function decodeKafkaMessage(Message $kafkaMessage) {
-        $message = json_decode($kafkaMessage->payload, true);
+    public function decodeKafkaMessage(Message $kafka_message) {
+        $message = json_decode($kafka_message->payload, true);
 
         if (isset($message->body) && is_string($message->body)) {
             $message->body = json_decode($message->body, true);
@@ -131,43 +91,26 @@ class KafkaConsumerHandler {
     }
 
     /**
-     * Set topic conf
-     *
-     * @return TopicConf
-     */
-    public function setTopicConfig() : TopicConf{
-        $topicConf = new TopicConf();
-        $topicConf->set('auto.commit.interval.ms', 100);
-
-        // Set the offset store method to 'file'
-        $topicConf->set('offset.store.method', 'broker');
-
-        $topicConf->set('auto.offset.reset', config("kafka.offset_reset"));
-        return $topicConf;
-    }
-
-    /**
      * Kafka Consumer
-     * @param  [mixed]      $handler  Instance of class handler
-     * @return void                 
+     * @param  mixed  $handler Instance of Consumer Handler
+     * @return void
      */
     public function createConsumer($handler) {
-        $partition = config('kafka.partition');
+        $this->consumer = new KafkaConsumer($this->conf);
 
-        if( $partition != null ){
+        # Setup Kafka parition
+        $partition = config('kafka.partition');
+        if ($partition != null) {
             $this->consumer->assign([
-                new TopicPartition(config('kafka.topic'), $partition)
+                new TopicPartition(config('kafka.topic'), $partition),
             ]);
-        }
-        else {
+        } else {
             $this->consumer->subscribe([config('kafka.topic')]);
         }
 
-        // it will return current assign partition.
-        // print_r($this->consumer->getAssignment());
-        
+        # Run the Consumer
         while (true) {
-            $message = $this->consumer->consume(120*1000);
+            $message = $this->consumer->consume(120 * 1000);
             switch ($message->err) {
                 case RD_KAFKA_RESP_ERR_NO_ERROR:
                     $handler($this->decodeKafkaMessage($message));
@@ -183,26 +126,6 @@ class KafkaConsumerHandler {
                     break;
             }
         }
-
-
-
-        // $topic = $this->consumer->newTopic(config('kafka.topic'), $this->setTopicConfig());
-        // $partition = config('kafka.partition');
-        // $topic->consumeStart($partition, RD_KAFKA_OFFSET_STORED);
-
-        // while (true) {
-            
-        //     $message = $topic->consume($partition, 120*10000);
-
-        //     if (null === $message || $message->err === RD_KAFKA_RESP_ERR__PARTITION_EOF) {
-        //         continue;
-        //     } elseif ($message->err) {
-        //         throw new Exception($message->errstr());
-        //         break;
-        //     } else {
-        //         $handler($this->decodeKafkaMessage($message));
-        //     }
-        // }
     }
 
 }
