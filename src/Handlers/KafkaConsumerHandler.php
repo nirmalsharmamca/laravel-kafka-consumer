@@ -15,10 +15,6 @@ use RdKafka\Message;
 use RdKafka\TopicPartition;
 
 class KafkaConsumerHandler {
-    /**
-     * Topic missing error message
-     */
-    const TOPIC_MISSING_ERROR_MESSAGE = 'Topic is not set';
 
     /**
      * Kafka Consumer Configuration
@@ -35,15 +31,16 @@ class KafkaConsumerHandler {
     protected $consumer;
 
     public function __construct(Conf $conf) {
-        $this->setConsumerConfig($conf);
+        $this->conf = $conf;
+        $this->setupKafkaConfig();
     }
 
     /**
      * Setup configs for Kafka Consumer
      *
-     * @return \RdKafka\Conf
+     * @return void
      */
-    protected function setConsumerConfig(Conf $conf) {
+    protected function setupKafkaConfig() {
 
         // Configure the group.id. All consumer with the same group.id will consume
         // different partitions.
@@ -65,8 +62,6 @@ class KafkaConsumerHandler {
 
         // Automatically and periodically commit offsets in the background
         $conf->set('enable.auto.commit', config("kafka.auto_commit"));
-
-        $this->conf = $conf;
     }
 
     /**
@@ -81,23 +76,17 @@ class KafkaConsumerHandler {
      * @return object
      */
     public function decodeKafkaMessage(Message $kafka_message) {
-        $return_data = [
-            "headers" => null,
-            "data"    => [],
-            "key"     => null,
-            "raw"     => $kafka_message,
-        ];
-
         $message = json_decode($kafka_message->payload, true);
         if (isset($message->body) && is_string($message->body)) {
             $message->body = json_decode($message->body, true);
         }
 
-        $return_data['data'] = $message;
-        $return_data['headers'] = @$kafka_message->headers;
-        $return_data['key'] = @$kafka_message->key;
-
-        return $return_data;
+        return [
+            "headers" => $kafka_message->headers,
+            "data"    => $message->body,
+            "key"     => $kafka_message->key,
+            "raw"     => $kafka_message,
+        ];
     }
 
     /**
