@@ -32,7 +32,7 @@ class KafkaConsumerHandler {
 
     public function __construct(Conf $conf) {
         $this->conf = $conf;
-        $this->setupKafkaConfig();
+        $this->setupKafkaConfig($this->conf);
     }
 
     /**
@@ -40,7 +40,7 @@ class KafkaConsumerHandler {
      *
      * @return void
      */
-    protected function setupKafkaConfig() {
+    protected function setupKafkaConfig(Conf $conf) {
 
         // Configure the group.id. All consumer with the same group.id will consume
         // different partitions.
@@ -62,6 +62,8 @@ class KafkaConsumerHandler {
 
         // Automatically and periodically commit offsets in the background
         $conf->set('enable.auto.commit', config("kafka.auto_commit"));
+
+        $this->conf = $conf;
     }
 
     /**
@@ -77,13 +79,14 @@ class KafkaConsumerHandler {
      */
     public function decodeKafkaMessage(Message $kafka_message) {
         $message = json_decode($kafka_message->payload, true);
-        if (isset($message->body) && is_string($message->body)) {
-            $message->body = json_decode($message->body, true);
+        
+        if (isset($message['body']) && is_string($message['body'])) {
+            $message['body'] = json_decode($message['body'], true);
         }
 
         return [
             "headers" => $kafka_message->headers,
-            "data"    => $message->body,
+            "data"    => $message,
             "key"     => $kafka_message->key,
             "raw"     => $kafka_message,
         ];
