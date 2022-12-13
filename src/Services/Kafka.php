@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Kafka Wrapper which is used to push tasks into Kafka
+ * Kafka Wrapper which is used to consume tasks from Kafka
  * This file takes care of the conversation between PHP and Kafka
  */
 
@@ -14,11 +14,10 @@ abstract class Kafka {
     /**
      * Create Consumer function
      *
-     * @param string $topic
      * @return $consumer
      */
-    public static function createConsumer(string $topic, int $partition = 0, $handler) {            
-        $obj = app(KafkaConsumerHandler::class);
-        return $obj->createConsumer($topic, $partition, $handler);
+    public static function createConsumer($handler) {
+        $consumer = app(KafkaConsumerHandler::class);
+        return $consumer->createConsumer($handler);
     }
 }

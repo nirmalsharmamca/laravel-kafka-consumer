@@ -63,7 +63,7 @@ return [
     |
     */
 
-    'consumer_group_id' => env('KAFKA_CONSUMER_GROUP_ID', 'group'),
+    'consumer_group_id' => env('KAFKA_CONSUMER_GROUP_ID', 'kafka-cg'),
 
     /*
     |--------------------------------------------------------------------------
@@ -99,6 +99,15 @@ return [
     |
     */
 
-    'partition' => env('KAFKA_PARTITION', 0),
+    'partition' => env('KAFKA_PARTITION', null),
+
+     /*
+    |--------------------------------------------------------------------------
+    | Kafka topic
+    |--------------------------------------------------------------------------
+    |
+    */
+
+    'topic' => env('KAFKA_TOPIC', ""),
 
 ];
