@@ -32,7 +32,7 @@ class KafkaConsumerHandler {
 
     public function __construct(Conf $conf) {
         $this->conf = $conf;
-        $this->setupKafkaConfig($this->conf);
+        $this->setupKafkaConfig();
     }
 
     /**
@@ -40,30 +40,29 @@ class KafkaConsumerHandler {
      *
      * @return void
      */
-    protected function setupKafkaConfig(Conf $conf) {
+    protected function setupKafkaConfig() {
 
         // Configure the group.id. All consumer with the same group.id will consume
         // different partitions.
-        $conf->set('group.id', config("kafka.consumer_group_id"));
+        $this->conf->set('group.id', config("kafka.consumer_group_id"));
 
         // Initial list of Kafka brokers
-        $conf->set('metadata.broker.list', config("kafka.brokers"));
+        $this->conf->set('metadata.broker.list', config("kafka.brokers"));
 
         // SSL Protocol
-        $conf->set('security.protocol', config("kafka.ssl_protocol"));
+        $this->conf->set('security.protocol', config("kafka.ssl_protocol"));
 
         // Set where to start consuming messages when there is no initial offset in
         // offset store or the desired offset is out of range.
         // 'smallest': start from the beginning
-        $conf->set('auto.offset.reset', config("kafka.offset_reset"));
+        $this->conf->set('auto.offset.reset', config("kafka.offset_reset"));
 
         // Emit EOF event when reaching the end of a partition
-        $conf->set('enable.partition.eof', 'true');
+        $this->conf->set('enable.partition.eof', 'true');
 
         // Automatically and periodically commit offsets in the background
-        $conf->set('enable.auto.commit', config("kafka.auto_commit"));
+        $this->conf->set('enable.auto.commit', config("kafka.auto_commit"));
 
-        $this->conf = $conf;
     }
 
     /**
